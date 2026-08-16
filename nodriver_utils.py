@@ -88,7 +88,6 @@ async def build_browser(
         "--allow-running-insecure-content",
         "--disable-web-security",
         "--disable-features=IsolateOrigins,site-per-process",
-        "--host-resolver-rules=MAP * 8.8.8.8, EXCLUDE 127.0.0.1",
         # Spoof a modern Windows x64 Chrome UA to avoid "browser too old" blocks
         (
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
