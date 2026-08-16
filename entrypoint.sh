@@ -18,15 +18,25 @@ warp-cli --accept-tos mode proxy
 warp-cli --accept-tos proxy port 40000
 warp-cli --accept-tos connect
 
-# Verify connection
+# Verify connection & test actual HTTP traffic through SOCKS5 proxy
 WARP_READY=false
-for i in {1..25}; do
+for i in {1..30}; do
     STATUS=$(warp-cli --accept-tos status 2>/dev/null || echo "")
     echo "[WARP] Attempt $i - Status: $STATUS"
-    if echo "$STATUS" | grep -qi "Connected"; then
-        echo "[WARP] WARP is successfully CONNECTED!"
+
+    # Test curl through local SOCKS5 proxy to verify it can resolve and route
+    if curl -s -m 5 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp=on"; then
+        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
         WARP_READY=true
         break
+    elif echo "$STATUS" | grep -qi "Connected"; then
+        # Fallback check if cloudflare trace is slow
+        echo "[WARP] WARP is Connected, checking port 40000..."
+        if curl -s -m 3 --socks5 127.0.0.1:40000 https://httpbin.org/ip >/dev/null 2>&1 || curl -s -m 3 --socks5 127.0.0.1:40000 https://1.1.1.1 >/dev/null 2>&1; then
+            echo "[WARP] SOCKS5 proxy on port 40000 is active!"
+            WARP_READY=true
+            break
+        fi
     fi
     sleep 2
 done
