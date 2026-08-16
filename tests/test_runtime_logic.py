@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import account_rotation
 import mimo_workflow
+import nodriver_utils
 import tempmail_flow
 from nodriver_utils import TEXT, find_element
 from tempmail_flow import TempMailInbox
@@ -204,6 +205,18 @@ class RuntimeLogicTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(session.await_count, 2)
         sleep.assert_awaited_once_with(account_rotation.FAILED_CYCLE_BACKOFF_SECONDS)
+
+    async def test_wait_until_loaded_fails_fast_on_chrome_error(self) -> None:
+        tab = AsyncMock()
+        tab.evaluate.side_effect = [
+            "chrome-error://chromewebdata/",
+            "ERR_CONNECTION_FAILED",
+        ]
+        with self.assertRaises(RuntimeError) as context:
+            await nodriver_utils.wait_until_loaded(tab, timeout=2)
+
+        self.assertIn("Browser failed to connect", str(context.exception))
+        self.assertIn("ERR_CONNECTION_FAILED", str(context.exception))
 
 
 if __name__ == "__main__":

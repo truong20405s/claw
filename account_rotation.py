@@ -23,13 +23,17 @@ async def run_account_session(
     browser = None
     try:
         browser = await asyncio.wait_for(
-            build_browser(args.headless),
+            build_browser(args.headless, proxy=getattr(args, "proxy_server", None)),
             timeout=max(30, args.timeout),
         )
-        tab = await asyncio.wait_for(
-            browser.get(args.url),
-            timeout=max(30, args.timeout),
-        )
+        try:
+            tab = await asyncio.wait_for(
+                browser.get(args.url),
+                timeout=max(30, args.timeout),
+            )
+        except Exception as get_exc:
+            log.warning("browser.get initial call had issue: %s. Using main tab...", get_exc)
+            tab = browser.main_tab or (await browser.get("about:blank"))
         completed = await run_workflow(browser, tab, args)
         return completed
     except Exception as error:

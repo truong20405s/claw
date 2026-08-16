@@ -54,31 +54,56 @@ def find_chromium_binary() -> str:
     return browser_path
 
 
-async def build_browser(headless: bool) -> uc.Browser:
+async def build_browser(
+    headless: bool,
+    proxy: str | None = None,
+) -> uc.Browser:
     browser_path = find_chromium_binary()
-    log.info("Starting nodriver with Chromium: %s (headless=%s)", browser_path, headless)
+    proxy_server = (
+        proxy
+        or os.environ.get("PROXY_SERVER", "").strip()
+        or os.environ.get("HTTP_PROXY", "").strip()
+        or os.environ.get("HTTPS_PROXY", "").strip()
+        or None
+    )
+    log.info(
+        "Starting nodriver with Chromium: %s (headless=%s, proxy=%s)",
+        browser_path,
+        headless,
+        "configured" if proxy_server else "none",
+    )
+    browser_args = [
+        "--window-size=1440,1000",
+        "--disable-notifications",
+        "--disable-popup-blocking",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-blink-features=AutomationControlled",
+        "--ignore-certificate-errors",
+        "--allow-running-insecure-content",
+        "--disable-web-security",
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--host-resolver-rules=MAP * 8.8.8.8, EXCLUDE 127.0.0.1",
+        # Spoof a modern Windows x64 Chrome UA to avoid "browser too old" blocks
+        (
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/137.0.0.0 Safari/537.36"
+        ),
+    ]
+    if proxy_server:
+        browser_args.append(f"--proxy-server={proxy_server}")
+
     return await uc.start(
         headless=headless,
         browser_executable_path=browser_path,
         sandbox=False,
-        browser_args=[
-            "--window-size=1440,1000",
-            "--disable-notifications",
-            "--disable-popup-blocking",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--disable-software-rasterizer",
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-blink-features=AutomationControlled",
-            # Spoof a modern Windows x64 Chrome UA to avoid "browser too old" blocks
-            (
-                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/137.0.0.0 Safari/537.36"
-            ),
-        ],
+        browser_args=browser_args,
     )
 
 
@@ -243,6 +268,21 @@ async def wait_until_loaded(
             if not current_url or current_url in ("about:blank", "chrome://newtab/"):
                 await asyncio.sleep(0.25)
                 continue
+            if current_url.startswith("chrome-error://"):
+                error_details = ""
+                try:
+                    error_details = await tab.evaluate(
+                        "document.body ? document.body.innerText.replace(/\\s+/g, ' ').trim() : ''",
+                        return_by_value=True,
+                    )
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"Browser failed to connect (URL: {current_url}). "
+                    f"Network error details: {error_details or 'Connection failed / IP blocked'}. "
+                    "If deploying to cloud (Railway/VPS), Xiaomi may be blocking datacenter IPs. "
+                    "Please set PROXY_SERVER in environment variables."
+                )
             if expected_url_contains and expected_url_contains not in current_url:
                 await asyncio.sleep(0.25)
                 continue
@@ -255,6 +295,8 @@ async def wait_until_loaded(
                 await find_element(tab, (CSS, "body"), timeout=1)
                 return
         except Exception as err:
+            if "chrome-error://" in str(err) or "Browser failed to connect" in str(err):
+                raise
             log.debug("wait_until_loaded transient error: %s", err)
         await asyncio.sleep(0.25)
     raise TimeoutError(

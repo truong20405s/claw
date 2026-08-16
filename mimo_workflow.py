@@ -625,15 +625,21 @@ async def run_workflow(
         return False
 
     log.info("Opening: %s", args.url)
-    try:
-        # Initial wait for any valid page load (not strictly bound to subdomain in case of early redirects)
-        await wait_until_loaded(tab, args.timeout)
-    except Exception as exc:
-        log.warning("Initial page load timed out or hit issue: %s. Checking if body is usable...", exc)
+    max_nav_retries = 3
+    for nav_attempt in range(1, max_nav_retries + 1):
         try:
-            await find_element(tab, (CSS, "body"), timeout=5)
-        except Exception:
-            raise exc
+            if nav_attempt > 1:
+                log.info("Navigation attempt %d/%d to %s...", nav_attempt, max_nav_retries, args.url)
+                await tab.send(uc.cdp.page.navigate(args.url))
+            await wait_until_loaded(tab, args.timeout)
+            break
+        except Exception as exc:
+            if nav_attempt < max_nav_retries:
+                log.warning("Page load attempt %d failed: %s. Retrying in 3s...", nav_attempt, exc)
+                await tab.sleep(3)
+            else:
+                log.error("All %d page load attempts failed: %s", max_nav_retries, exc)
+                raise exc
     try:
         current_url = await tab.evaluate("window.location.href", return_by_value=True)
         title = await tab.evaluate("document.title", return_by_value=True)

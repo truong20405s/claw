@@ -53,6 +53,10 @@ def parse_args() -> argparse.Namespace:
         help="Override the rotation interval from the config file.",
     )
     parser.add_argument(
+        "--proxy-server", default=None,
+        help="Proxy server URL (e.g. http://user:pass@host:port or socks5://host:port).",
+    )
+    parser.add_argument(
         "--log-level", default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Logging level.",
