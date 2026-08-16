@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Asia/Bangkok \
     PROXY_SERVER=socks5://127.0.0.1:40000
 
-# Install Chromium, WARP dependencies and networking utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
@@ -19,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxss1 \
     libasound2 \
     procps \
+    iptables \
+    net-tools \
     && curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflare-client.list \
     && apt-get update \
