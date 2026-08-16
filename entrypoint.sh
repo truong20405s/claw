@@ -36,5 +36,10 @@ if [ "$WARP_READY" = "false" ]; then
     export PROXY_SERVER=""
 fi
 
-echo "[APP] Launching Python application..."
-exec python app.py --headless "$@"
+PROXY_ARG=()
+if [ -n "$PROXY_SERVER" ]; then
+    PROXY_ARG=(--proxy-server "$PROXY_SERVER")
+fi
+
+echo "[APP] Launching Python application with PROXY: ${PROXY_SERVER:-none}..."
+exec python app.py --headless "${PROXY_ARG[@]}" "$@"
