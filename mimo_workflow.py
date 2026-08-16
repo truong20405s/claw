@@ -625,8 +625,15 @@ async def run_workflow(
         return False
 
     log.info("Opening: %s", args.url)
-    expected_domain = urlsplit(args.url).netloc
-    await wait_until_loaded(tab, args.timeout, expected_url_contains=expected_domain or None)
+    try:
+        # Initial wait for any valid page load (not strictly bound to subdomain in case of early redirects)
+        await wait_until_loaded(tab, args.timeout)
+    except Exception as exc:
+        log.warning("Initial page load timed out or hit issue: %s. Checking if body is usable...", exc)
+        try:
+            await find_element(tab, (CSS, "body"), timeout=5)
+        except Exception:
+            raise exc
     try:
         current_url = await tab.evaluate("window.location.href", return_by_value=True)
         title = await tab.evaluate("document.title", return_by_value=True)

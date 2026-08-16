@@ -65,6 +65,13 @@ async def build_browser(headless: bool) -> uc.Browser:
             "--window-size=1440,1000",
             "--disable-notifications",
             "--disable-popup-blocking",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-blink-features=AutomationControlled",
             # Spoof a modern Windows x64 Chrome UA to avoid "browser too old" blocks
             (
                 "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -226,9 +233,13 @@ async def wait_until_loaded(
     expected_url_contains: str | None = None,
 ) -> None:
     deadline = time.monotonic() + timeout
+    last_url = ""
+    last_ready_state = ""
     while time.monotonic() < deadline:
         try:
             current_url = await tab.evaluate("window.location.href", return_by_value=True)
+            if current_url:
+                last_url = current_url
             if not current_url or current_url in ("about:blank", "chrome://newtab/"):
                 await asyncio.sleep(0.25)
                 continue
@@ -238,13 +249,18 @@ async def wait_until_loaded(
             ready_state = await tab.evaluate(
                 "document.readyState", return_by_value=True
             )
+            if ready_state:
+                last_ready_state = ready_state
             if ready_state in ("interactive", "complete"):
                 await find_element(tab, (CSS, "body"), timeout=1)
                 return
-        except Exception:
-            pass
+        except Exception as err:
+            log.debug("wait_until_loaded transient error: %s", err)
         await asyncio.sleep(0.25)
-    raise TimeoutError(f"Page did not finish loading after {timeout:g}s.")
+    raise TimeoutError(
+        f"Page did not finish loading after {timeout:g}s. "
+        f"(last_url='{last_url}', ready_state='{last_ready_state}')"
+    )
 
 
 async def navigate(tab: uc.Tab, url: str, timeout: float = 30) -> None:

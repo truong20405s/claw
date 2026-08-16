@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--url", default=STUDIO_URL, help="Website URL to open.")
     parser.add_argument(
-        "--timeout", type=int, default=30,
+        "--timeout", type=int, default=60,
         help="Maximum seconds to wait for the page to load.",
     )
 
