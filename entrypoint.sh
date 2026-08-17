@@ -6,7 +6,7 @@ mkdir -p /var/run/dbus
 dbus-daemon --system --fork 2>/dev/null || true
 
 echo "[WARP] Starting warp-svc..."
-warp-svc --accept-tos &
+warp-svc --accept-tos >/tmp/warp-svc.log 2>&1 &
 WARP_PID=$!
 
 sleep 3
@@ -42,7 +42,9 @@ for i in {1..35}; do
 done
 
 if [ "$WARP_READY" = "false" ]; then
-    echo "[WARP] WARP daemon did not connect in time. Unsetting PROXY_SERVER fallback..."
+    echo "[WARP] WARP daemon did not connect in time. Printing recent warp-svc logs:"
+    tail -n 25 /tmp/warp-svc.log 2>/dev/null || true
+    echo "[WARP] Unsetting PROXY_SERVER fallback..."
     export PROXY_SERVER=""
 fi
 
