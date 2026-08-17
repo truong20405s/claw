@@ -21,22 +21,27 @@ warp-cli --accept-tos connect
 
 # Verify connection & test actual HTTP traffic through SOCKS5 proxy
 WARP_READY=false
-for i in {1..35}; do
+for i in {1..60}; do
     STATUS=$(warp-cli --accept-tos status 2>/dev/null || echo "")
-    echo "[WARP] Attempt $i - Status: $STATUS"
+    echo "[WARP] Attempt $i/60 - Status: $STATUS"
 
-    # Test curl through local SOCKS5 proxy to verify it can resolve and route
-    if curl -s -m 5 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
-        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
-        WARP_READY=true
-        break
-    elif echo "$STATUS" | grep -qi "Connected"; then
-        echo "[WARP] WARP is Connected, testing target connectivity..."
-        if curl -s -m 4 --socks5 127.0.0.1:40000 https://1.1.1.1 >/dev/null 2>&1 || curl -s -m 4 --socks5 127.0.0.1:40000 https://httpbin.org/ip >/dev/null 2>&1; then
-            echo "[WARP] SOCKS5 proxy on port 40000 is active!"
+    if echo "$STATUS" | grep -qi "Connected"; then
+        echo "[WARP] Status is Connected! Verifying SOCKS5 proxy on 127.0.0.1:40000..."
+        # Give warp a moment to bind socks port if just connected
+        sleep 1
+        if curl -s -m 5 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
+            echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
+            WARP_READY=true
+            break
+        elif curl -s -m 4 --socks5 127.0.0.1:40000 https://1.1.1.1 >/dev/null 2>&1 || curl -s -m 4 --socks5 127.0.0.1:40000 https://httpbin.org/ip >/dev/null 2>&1; then
+            echo "[WARP] SOCKS5 proxy is active and responding!"
             WARP_READY=true
             break
         fi
+    elif curl -s -m 4 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
+        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
+        WARP_READY=true
+        break
     fi
     sleep 2
 done
