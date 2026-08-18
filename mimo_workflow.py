@@ -631,7 +631,7 @@ async def run_workflow(
             if nav_attempt > 1:
                 log.info("Navigation attempt %d/%d to %s...", nav_attempt, max_nav_retries, args.url)
                 await tab.send(uc.cdp.page.navigate(args.url))
-            await wait_until_loaded(tab, args.timeout, expected_url_contains="xiaomi")
+            await wait_until_loaded(tab, args.timeout)
             break
         except Exception as exc:
             if nav_attempt < max_nav_retries:
