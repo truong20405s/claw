@@ -625,7 +625,7 @@ async def run_workflow(
         return False
 
     log.info("Opening: %s", args.url)
-    max_nav_retries = 3
+    max_nav_retries = 2
     for nav_attempt in range(1, max_nav_retries + 1):
         try:
             if nav_attempt > 1:
@@ -634,12 +634,17 @@ async def run_workflow(
             await wait_until_loaded(tab, args.timeout)
             break
         except Exception as exc:
-            if nav_attempt < max_nav_retries:
-                log.warning("Page load attempt %d failed: %s. Retrying in 3s...", nav_attempt, exc)
-                await tab.sleep(3)
-            else:
-                log.error("All %d page load attempts failed: %s", max_nav_retries, exc)
+            # If proxy error or connection refused, fail fast so rotation switches to next proxy immediately
+            is_proxy_error = any(
+                k in str(exc)
+                for k in ("ERR_SOCKS_", "ERR_PROXY_", "ERR_CONNECTION_REFUSED", "chrome-error://")
+            )
+            if is_proxy_error or nav_attempt >= max_nav_retries:
+                log.error("Page load failed (fast-fail): %s", exc)
                 raise exc
+            log.warning("Page load attempt %d failed: %s. Retrying in 2s...", nav_attempt, exc)
+            await tab.sleep(2)
+
     try:
         current_url = await tab.evaluate("window.location.href", return_by_value=True)
         title = await tab.evaluate("document.title", return_by_value=True)

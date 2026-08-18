@@ -227,11 +227,11 @@ class RuntimeLogicTests(unittest.IsolatedAsyncioTestCase):
                 ["socks5://1.1.1.1:1080", "socks5://2.2.2.2:1080", "socks5://3.3.3.3:1080"],
             )
 
-    def test_parse_proxy_pool_returns_default_when_empty(self) -> None:
+    def test_parse_proxy_pool_returns_empty_when_not_set(self) -> None:
         import app_config
         with patch.dict(app_config.os.environ, {}, clear=True):
             proxies = app_config.parse_proxy_pool()
-            self.assertEqual(proxies, app_config.DEFAULT_PROXY_POOL)
+            self.assertEqual(proxies, [])
 
 
     def test_proxy_pool_rotation(self) -> None:

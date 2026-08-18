@@ -70,24 +70,6 @@ async def build_browser(
         "--window-size=1440,1000",
         "--disable-notifications",
         "--disable-popup-blocking",
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-software-rasterizer",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-blink-features=AutomationControlled",
-        "--ignore-certificate-errors",
-        "--allow-running-insecure-content",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-        # Spoof a modern Windows x64 Chrome UA to avoid "browser too old" blocks
-        (
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/137.0.0.0 Safari/537.36"
-        ),
     ]
     if proxy_server:
         browser_args.append(f"--proxy-server={proxy_server}")
@@ -98,6 +80,7 @@ async def build_browser(
         sandbox=False,
         browser_args=browser_args,
     )
+
 
 
 async def find_element(

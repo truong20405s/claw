@@ -14,14 +14,6 @@ DEFAULT_PROMPT_SOURCE = (
     "https://drive.google.com/file/d/"
     "1SXbCW-6bFvVvsq70xtb_rk3thTscc2cP/view?usp=drive_link"
 )
-DEFAULT_PROXY_POOL = [
-    "socks5://38.180.9.158:4422",
-    "socks5://43.106.60.21:1080",
-    "socks5://8.219.97.248:80",
-    "socks5://213.188.208.179:80",
-    "socks4://34.43.46.91:80",
-]
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -136,7 +128,7 @@ def apply_interval_override(
 
 
 def parse_proxy_pool(proxy_arg: str | None = None) -> list[str]:
-    """Parse proxy list from CLI argument, environment variables, or default fallback pool."""
+    """Parse proxy list from CLI argument or environment variables."""
     raw_proxies = (
         proxy_arg
         or os.environ.get("PROXY_POOL", "").strip()
@@ -147,7 +139,7 @@ def parse_proxy_pool(proxy_arg: str | None = None) -> list[str]:
         or ""
     )
     if not raw_proxies:
-        return list(DEFAULT_PROXY_POOL)
+        return []
 
     # Support comma, newline, or semicolon delimited proxy list
     parts = [
@@ -155,6 +147,7 @@ def parse_proxy_pool(proxy_arg: str | None = None) -> list[str]:
         for chunk in raw_proxies.replace(";", ",").replace("\n", ",").split(",")
         if (item := chunk.strip())
     ]
-    return parts if parts else list(DEFAULT_PROXY_POOL)
+    return parts
+
 
 
