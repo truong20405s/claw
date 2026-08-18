@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import html
 import logging
-import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -20,7 +19,7 @@ from nodriver_utils import CSS, Locator, click_element, error_summary, find_elem
 log = logging.getLogger("claw.tempmail")
 
 BASE_URL = "https://tempmail.id.vn/api"
-TOKEN_ENV_NAME = "TEMPMAIL_API_TOKEN"
+TEMPMAIL_API_TOKEN = "11759|B4K2XX0L9PUxXNEd4rl9Eq4702wMjJbMyA6dlLz79984c7a4"
 DEFAULT_DOMAIN = "tempmail.id.vn"
 
 INBOX_MESSAGE_LINKS: Locator = (CSS, "a[href*='/message/']")
@@ -57,12 +56,9 @@ class TempMailInbox:
 
 
 def api_headers() -> dict[str, str]:
-    token = os.environ.get(TOKEN_ENV_NAME, "").strip()
-    if not token:
-        raise RuntimeError(f"Missing required environment variable: {TOKEN_ENV_NAME}")
     return {
         "Accept": "application/json",
-        "Authorization": f"Bearer {token}",
+        "Authorization": f"Bearer {TEMPMAIL_API_TOKEN}",
     }
 
 

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 import nodriver as uc
-from dotenv import load_dotenv
 
 from account_rotation import run_rotation
 from app_config import apply_interval_override, load_rotation_config, parse_args
@@ -29,7 +28,6 @@ def setup_logging(level: str = "INFO") -> None:
 
 
 async def async_main() -> None:
-    load_dotenv(Path(__file__).resolve().with_name(".env"), override=False)
     args = parse_args()
     setup_logging(getattr(args, "log_level", "INFO"))
     if os.name != "nt" and not os.environ.get("DISPLAY"):

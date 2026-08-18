@@ -100,17 +100,17 @@ class RuntimeLogicTests(unittest.IsolatedAsyncioTestCase):
     def test_load_prompt_reads_url_and_replaces_env_placeholders(self) -> None:
         response = MagicMock()
         response.__enter__.return_value.read.return_value = (
-            b"hello ${TELEGRAM_BOT_TOKEN}"
+            b"hello ${SOME_VAR}"
         )
 
         with (
             patch("mimo_workflow.time.time", return_value=123.456),
             patch("mimo_workflow.urlopen", return_value=response) as open_url,
-            patch.dict("mimo_workflow.os.environ", {"TELEGRAM_BOT_TOKEN": "token"}),
+            patch.dict("mimo_workflow.os.environ", {"SOME_VAR": "world"}),
         ):
             prompt = mimo_workflow.load_prompt("https://example.com/prompt.txt")
 
-        self.assertEqual(prompt, "hello token")
+        self.assertEqual(prompt, "hello world")
         request = open_url.call_args.args[0]
         self.assertIn("_prompt_ts=123456", request.full_url)
         self.assertEqual(request.headers["Cache-control"], "no-cache")
