@@ -16,6 +16,7 @@ load_dotenv(Path(__file__).resolve().with_name(".env"), override=False)
 
 from mimo_workflow import run_workflow
 from nodriver_utils import build_browser, error_summary
+from app_config import parse_proxy_pool
 
 # --- Config test ---
 TEST_ACCOUNT  = "mi13@tempmail.id.vn"
@@ -49,15 +50,18 @@ class FakeArgs:
         "https://drive.google.com/file/d/"
         "1SXbCW-6bFvVvsq70xtb_rk3thTscc2cP/view?usp=drive_link"
     )
+    proxy_server  = None
 
 
 async def main() -> None:
     args = FakeArgs()
-    log.info("=== TEST START: %s ===", TEST_ACCOUNT)
+    proxies = parse_proxy_pool()
+    proxy = proxies[0] if proxies else None
+    log.info("=== TEST START: %s (Proxy: %s) ===", TEST_ACCOUNT, proxy)
     browser = None
     try:
         browser = await asyncio.wait_for(
-            build_browser(args.headless),
+            build_browser(args.headless, proxy=proxy),
             timeout=60,
         )
         tab = await asyncio.wait_for(

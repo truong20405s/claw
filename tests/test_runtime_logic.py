@@ -218,6 +218,30 @@ class RuntimeLogicTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Browser failed to connect", str(context.exception))
         self.assertIn("ERR_CONNECTION_FAILED", str(context.exception))
 
+    def test_parse_proxy_pool_parses_comma_and_env(self) -> None:
+        import app_config
+        with patch.dict(app_config.os.environ, {"PROXY_POOL": "socks5://1.1.1.1:1080, socks5://2.2.2.2:1080\nsocks5://3.3.3.3:1080"}):
+            proxies = app_config.parse_proxy_pool()
+            self.assertEqual(
+                proxies,
+                ["socks5://1.1.1.1:1080", "socks5://2.2.2.2:1080", "socks5://3.3.3.3:1080"],
+            )
+
+    def test_parse_proxy_pool_returns_default_when_empty(self) -> None:
+        import app_config
+        with patch.dict(app_config.os.environ, {}, clear=True):
+            proxies = app_config.parse_proxy_pool()
+            self.assertEqual(proxies, app_config.DEFAULT_PROXY_POOL)
+
+
+    def test_proxy_pool_rotation(self) -> None:
+        pool = account_rotation.ProxyPool(["socks5://1.1.1.1:1080", "socks5://2.2.2.2:1080"])
+        self.assertEqual(pool.get_current_proxy(), "socks5://1.1.1.1:1080")
+        pool.rotate_to_next()
+        self.assertEqual(pool.get_current_proxy(), "socks5://2.2.2.2:1080")
+        pool.rotate_to_next()
+        self.assertEqual(pool.get_current_proxy(), "socks5://1.1.1.1:1080")
+
 
 if __name__ == "__main__":
     unittest.main()

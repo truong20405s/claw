@@ -24,6 +24,9 @@ Set the token either in the uploaded `.env` file or as a Railway service
 variable (the Railway variable takes precedence):
 
 - `TELEGRAM_BOT_TOKEN`: Telegram bot token inserted into the prompt at runtime
+- `TEMPMAIL_API_TOKEN`: Token for TempMail API
+- `PROXY_POOL` (hoặc `PROXY_SERVER`): Danh sách proxy tự động xoay tua (phân cách bằng dấu phẩy), ví dụ:
+  `socks5://38.180.9.158:4422,socks5://43.106.60.21:1080,socks5://8.219.97.248:80`
 
 To use another prompt file, pass a local path or URL:
 

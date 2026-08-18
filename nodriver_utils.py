@@ -59,18 +59,12 @@ async def build_browser(
     proxy: str | None = None,
 ) -> uc.Browser:
     browser_path = find_chromium_binary()
-    proxy_server = (
-        proxy
-        or os.environ.get("PROXY_SERVER", "").strip()
-        or os.environ.get("HTTP_PROXY", "").strip()
-        or os.environ.get("HTTPS_PROXY", "").strip()
-        or None
-    )
+    proxy_server = proxy.strip() if proxy and proxy.strip() else None
     log.info(
         "Starting nodriver with Chromium: %s (headless=%s, proxy=%s)",
         browser_path,
         headless,
-        "configured" if proxy_server else "none",
+        proxy_server or "none",
     )
     browser_args = [
         "--window-size=1440,1000",

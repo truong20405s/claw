@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,14 @@ DEFAULT_PROMPT_SOURCE = (
     "https://drive.google.com/file/d/"
     "1SXbCW-6bFvVvsq70xtb_rk3thTscc2cP/view?usp=drive_link"
 )
+DEFAULT_PROXY_POOL = [
+    "socks5://38.180.9.158:4422",
+    "socks5://43.106.60.21:1080",
+    "socks5://8.219.97.248:80",
+    "socks5://213.188.208.179:80",
+    "socks4://34.43.46.91:80",
+]
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--proxy-server", default=None,
-        help="Proxy server URL (e.g. http://user:pass@host:port or socks5://host:port).",
+        help="Proxy server URL or comma-separated list (e.g. socks5://host:port,http://host:port).",
     )
     parser.add_argument(
         "--log-level", default="INFO",
@@ -124,3 +133,28 @@ def apply_interval_override(
     if not math.isfinite(interval_hours) or interval_hours <= 0:
         raise ValueError("--interval-hours must be a finite number above zero.")
     config["interval_hours"] = interval_hours
+
+
+def parse_proxy_pool(proxy_arg: str | None = None) -> list[str]:
+    """Parse proxy list from CLI argument, environment variables, or default fallback pool."""
+    raw_proxies = (
+        proxy_arg
+        or os.environ.get("PROXY_POOL", "").strip()
+        or os.environ.get("PROXY_SERVERS", "").strip()
+        or os.environ.get("PROXY_SERVER", "").strip()
+        or os.environ.get("HTTP_PROXY", "").strip()
+        or os.environ.get("HTTPS_PROXY", "").strip()
+        or ""
+    )
+    if not raw_proxies:
+        return list(DEFAULT_PROXY_POOL)
+
+    # Support comma, newline, or semicolon delimited proxy list
+    parts = [
+        item.strip()
+        for chunk in raw_proxies.replace(";", ",").replace("\n", ",").split(",")
+        if (item := chunk.strip())
+    ]
+    return parts if parts else list(DEFAULT_PROXY_POOL)
+
+
