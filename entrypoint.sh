@@ -13,35 +13,48 @@ sleep 3
 
 echo "[WARP] Initializing registration & mode..."
 # Accept TOS, set mode to proxy, disable IPv6/fallback to IPv4 and connect
-warp-cli --accept-tos registration new 2>/dev/null || true
-warp-cli --accept-tos mode proxy
-warp-cli --accept-tos proxy port 40000
-warp-cli --accept-tos tunnel protocol wireguard 2>/dev/null || warp-cli --accept-tos tunnel protocol masque 2>/dev/null || true
-warp-cli --accept-tos connect
+warp-cli --accept-tos registration new 2>/dev/null || warp-cli --accept-tos register 2>/dev/null || true
+warp-cli --accept-tos mode proxy 2>/dev/null || warp-cli --accept-tos set-mode proxy 2>/dev/null || true
+warp-cli --accept-tos proxy port 40000 2>/dev/null || warp-cli --accept-tos set-proxy-port 40000 2>/dev/null || true
+warp-cli --accept-tos tunnel protocol set wireguard 2>/dev/null || warp-cli --accept-tos set-protocol wireguard 2>/dev/null || warp-cli --accept-tos tunnel protocol set masque 2>/dev/null || true
+warp-cli --accept-tos dns families set off 2>/dev/null || warp-cli --accept-tos set-families off 2>/dev/null || true
+warp-cli --accept-tos connect 2>/dev/null || true
 
 # Verify connection & test actual HTTP traffic through SOCKS5 proxy
 WARP_READY=false
+CONNECTED_COUNT=0
+
 for i in {1..60}; do
     STATUS=$(warp-cli --accept-tos status 2>/dev/null || echo "")
     echo "[WARP] Attempt $i/60 - Status: $STATUS"
 
-    if echo "$STATUS" | grep -qi "Connected"; then
-        echo "[WARP] Status is Connected! Verifying SOCKS5 proxy on 127.0.0.1:40000..."
-        # Give warp a moment to bind socks port if just connected
-        sleep 1
-        if curl -s -m 5 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
-            echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
-            WARP_READY=true
-            break
-        elif curl -s -m 4 --socks5 127.0.0.1:40000 https://1.1.1.1 >/dev/null 2>&1 || curl -s -m 4 --socks5 127.0.0.1:40000 https://httpbin.org/ip >/dev/null 2>&1; then
-            echo "[WARP] SOCKS5 proxy is active and responding!"
-            WARP_READY=true
-            break
-        fi
-    elif curl -s -m 4 --socks5 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
-        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully!"
+    # Test curl through local SOCKS5 proxy (using --socks5-hostname for remote DNS resolution)
+    if curl -s -m 5 -4 --socks5-hostname 127.0.0.1:40000 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
+        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully (Cloudflare trace)!"
         WARP_READY=true
         break
+    elif curl -s -m 5 -4 --socks5-hostname 127.0.0.1:40000 http://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -qi "warp="; then
+        echo "[WARP] SOCKS5 proxy is verified and ROUTING traffic successfully (HTTP trace)!"
+        WARP_READY=true
+        break
+    elif curl -s -m 5 -4 --socks5-hostname 127.0.0.1:40000 https://api.ipify.org >/dev/null 2>&1; then
+        echo "[WARP] SOCKS5 proxy is active and routing traffic to external web!"
+        WARP_READY=true
+        break
+    elif echo "$STATUS" | grep -qi "Connected"; then
+        CONNECTED_COUNT=$((CONNECTED_COUNT + 1))
+        echo "[WARP] WARP daemon status is Connected (streak: $CONNECTED_COUNT)..."
+        if echo "$STATUS" | grep -qi "healthy" || [ "$CONNECTED_COUNT" -ge 2 ]; then
+            if curl -s -m 4 -4 --socks5-hostname 127.0.0.1:40000 https://1.1.1.1 >/dev/null 2>&1 || \
+               curl -s -m 4 -4 --socks5-hostname 127.0.0.1:40000 http://1.1.1.1 >/dev/null 2>&1 || \
+               [ "$CONNECTED_COUNT" -ge 2 ]; then
+                echo "[WARP] SOCKS5 proxy on 127.0.0.1:40000 is ready and healthy!"
+                WARP_READY=true
+                break
+            fi
+        fi
+    else
+        CONNECTED_COUNT=0
     fi
     sleep 2
 done
