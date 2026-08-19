@@ -27,16 +27,33 @@ jobs:
           restore-keys: |
             pip-${{ runner.os }}-
 
+      - name: Find Chrome binary
+        run: |
+          CHROME_PATH=$(find /ms-playwright -name 'chrome' -type f 2>/dev/null | head -1)
+          if [ -z "$CHROME_PATH" ]; then
+            CHROME_PATH=$(which chromium || which chromium-browser || which google-chrome || which chrome || echo '')
+          fi
+          if [ -z "$CHROME_PATH" ]; then
+            echo 'ERROR: Chrome not found!'
+            find /ms-playwright -type f 2>/dev/null | head -20
+            exit 1
+          fi
+          echo "CHROME_BIN=$CHROME_PATH" >> $GITHUB_ENV
+          echo "Found Chrome: $CHROME_PATH"
+
       - name: Install dependencies
+        working-directory: ${{ github.workspace }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run login test (all accounts, 1min interval)
+        working-directory: ${{ github.workspace }}
         run: python run_scheduled.py --headless --login-only
 
       - name: Show final state
         if: always()
+        working-directory: ${{ github.workspace }}
         run: |
           if [ -f state.json ]; then
             echo "=== Final State ==="
@@ -45,6 +62,7 @@ jobs:
 
       - name: Commit state
         if: always()
+        working-directory: ${{ github.workspace }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
