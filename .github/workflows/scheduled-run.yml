@@ -17,10 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,6 +30,7 @@ jobs:
             pip-${{ runner.os }}-
 
       - name: Install dependencies
+        working-directory: /__w/claw/claw
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -41,12 +38,13 @@ jobs:
       - name: Restore state
         uses: actions/cache@v4
         with:
-          path: state.json
+          path: /__w/claw/claw/state.json
           key: mimo-scheduled-state
           restore-keys: |
             mimo-scheduled-state
 
       - name: Show current state
+        working-directory: /__w/claw/claw
         run: |
           if [ -f state.json ]; then
             echo "=== Current State ==="
@@ -56,10 +54,12 @@ jobs:
           fi
 
       - name: Run scheduled task
+        working-directory: /__w/claw/claw
         run: python run_scheduled.py --headless
 
       - name: Show updated state
         if: always()
+        working-directory: /__w/claw/claw
         run: |
           if [ -f state.json ]; then
             echo "=== Updated State ==="
@@ -68,6 +68,7 @@ jobs:
 
       - name: Commit state
         if: always()
+        working-directory: /__w/claw/claw
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
