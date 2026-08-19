@@ -35,26 +35,26 @@ jobs:
           fi
           if [ -z "$CHROME_PATH" ]; then
             echo 'ERROR: Chrome not found!'
-            find /ms-playwright -type f 2>/dev/null | head -20
             exit 1
           fi
           echo "CHROME_BIN=$CHROME_PATH" >> $GITHUB_ENV
           echo "Found Chrome: $CHROME_PATH"
 
       - name: Install dependencies
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run single account login test
-        working-directory: ${{ github.workspace }}
-        run: python test_single_login.py
+        run: |
+          cd $GITHUB_WORKSPACE
+          python test_single_login.py
 
       - name: Show final state
         if: always()
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           if [ -f state.json ]; then
             echo "=== Final State ==="
             cat state.json
@@ -62,8 +62,8 @@ jobs:
 
       - name: Commit state
         if: always()
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git

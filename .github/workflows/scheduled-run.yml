@@ -43,8 +43,8 @@ jobs:
           echo "Found Chrome: $CHROME_PATH"
 
       - name: Install dependencies
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -57,8 +57,8 @@ jobs:
             mimo-scheduled-state
 
       - name: Show current state
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           if [ -f state.json ]; then
             echo "=== Current State ==="
             cat state.json
@@ -67,13 +67,14 @@ jobs:
           fi
 
       - name: Run scheduled task
-        working-directory: ${{ github.workspace }}
-        run: python run_scheduled.py --headless
+        run: |
+          cd $GITHUB_WORKSPACE
+          python run_scheduled.py --headless
 
       - name: Show updated state
         if: always()
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           if [ -f state.json ]; then
             echo "=== Updated State ==="
             cat state.json
@@ -81,8 +82,8 @@ jobs:
 
       - name: Commit state
         if: always()
-        working-directory: ${{ github.workspace }}
         run: |
+          cd $GITHUB_WORKSPACE
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
