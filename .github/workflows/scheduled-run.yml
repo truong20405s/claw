@@ -1,11 +1,8 @@
 name: Scheduled MiMo Auto Login
 
 on:
-  # Chạy mỗi giờ — script tự kiểm tra đủ 4h chưa
   schedule:
     - cron: '0 * * * *'
-
-  # Cho phép chạy manual từ GitHub UI
   workflow_dispatch:
 
 permissions:
@@ -13,13 +10,16 @@ permissions:
 
 jobs:
   run-scheduled:
-    # Dùng container có sẵn Chromium — không cần cài lại mỗi lần
     container:
       image: mcr.microsoft.com/playwright/python:v1.49.1-noble
       options: --shm-size=2g
 
     runs-on: ubuntu-latest
     timeout-minutes: 120
+
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Checkout code
@@ -38,7 +38,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Restore state từ lần chạy trước
       - name: Restore state
         uses: actions/cache@v4
         with:
@@ -57,9 +56,7 @@ jobs:
           fi
 
       - name: Run scheduled task
-        run: |
-          # Playwright container đã có Chromium + display server
-          python run_scheduled.py --headless
+        run: python run_scheduled.py --headless
 
       - name: Show updated state
         if: always()
@@ -69,7 +66,6 @@ jobs:
             cat state.json
           fi
 
-      # Commit state file về repo
       - name: Commit state
         if: always()
         run: |
