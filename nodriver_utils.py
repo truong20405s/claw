@@ -67,6 +67,9 @@ async def build_browser(
         proxy_server or "none",
     )
     browser_args = [
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
         "--window-size=1440,1000",
         "--disable-notifications",
         "--disable-popup-blocking",

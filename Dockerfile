@@ -7,11 +7,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
+    chromium-sandbox \
     ca-certificates \
     fonts-liberation \
     libnss3 \
     libxss1 \
     libasound2 \
+    libgbm1 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libatspi2.0-0 \
     procps \
     curl \
     && apt-get clean \
