@@ -84,8 +84,8 @@ jobs:
         if: always()
         run: |
           cd $GITHUB_WORKSPACE
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-          git add state.json
-          git diff --cached --quiet || git commit -m "chore: update state [skip ci]" && git push
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git -C $GITHUB_WORKSPACE remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          git -C $GITHUB_WORKSPACE add state.json || true
+          git -C $GITHUB_WORKSPACE diff --cached --quiet || git -C $GITHUB_WORKSPACE commit -m "chore: update state [skip ci]" && git -C $GITHUB_WORKSPACE push || echo "Nothing to commit"

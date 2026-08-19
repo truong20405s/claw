@@ -40,13 +40,6 @@ jobs:
           echo "CHROME_BIN=$CHROME_PATH" >> $GITHUB_ENV
           echo "Found Chrome: $CHROME_PATH"
 
-      - name: Debug workspace
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "PWD=$(pwd)"
-          ls -la $GITHUB_WORKSPACE/.git 2>/dev/null || echo "No .git in GITHUB_WORKSPACE"
-          find / -name ".git" -type d 2>/dev/null | head -5
-
       - name: Install dependencies
         run: |
           cd $GITHUB_WORKSPACE
@@ -58,21 +51,12 @@ jobs:
           cd $GITHUB_WORKSPACE
           python test_single_login.py
 
-      - name: Show final state
-        if: always()
-        run: |
-          cd $GITHUB_WORKSPACE
-          if [ -f state.json ]; then
-            echo "=== Final State ==="
-            cat state.json
-          fi
-
       - name: Commit state
         if: always()
         run: |
           cd $GITHUB_WORKSPACE
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-          git add state.json
-          git diff --cached --quiet || git commit -m "chore: update test state [skip ci]" && git push
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git -C $GITHUB_WORKSPACE remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          git -C $GITHUB_WORKSPACE add state.json || true
+          git -C $GITHUB_WORKSPACE diff --cached --quiet || git -C $GITHUB_WORKSPACE commit -m "chore: update test state [skip ci]" && git -C $GITHUB_WORKSPACE push || echo "Nothing to commit"
