@@ -1,0 +1,88 @@
+name: Scheduled MiMo Auto Login
+
+on:
+  # Chạy mỗi giờ — script tự kiểm tra đủ 4h chưa
+  schedule:
+    - cron: '0 * * * *'  # Mỗi giờ vào phút 0
+
+  # Cho phép chạy manual từ GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  run-scheduled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chromium & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser xvfb || sudo apt-get install -y chromium xvfb
+
+      # Restore state từ lần chạy trước
+      - name: Restore state
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: mimo-scheduled-state
+          restore-keys: |
+            mimo-scheduled-state
+
+      - name: Show current state
+        run: |
+          if [ -f state.json ]; then
+            echo "=== Current State ==="
+            cat state.json
+            echo ""
+            echo "Last run: $(python3 -c "import json; s=json.load(open('state.json')); print(s.get('last_run_time','never'))")"
+          else
+            echo "=== No state file (first run) ==="
+          fi
+
+      - name: Run scheduled task
+        env:
+          DISPLAY: ':99'
+        run: |
+          # Start virtual display
+          Xvfb :99 -screen 0 1920x1080x24 &
+          sleep 2
+
+          # Chạy script scheduled
+          python run_scheduled.py --headless
+
+      - name: Show updated state
+        if: always()
+        run: |
+          if [ -f state.json ]; then
+            echo "=== Updated State ==="
+            cat state.json
+          fi
+
+      # Commit state file về repo
+      - name: Commit state
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add state.json
+          git diff --cached --quiet || git commit -m "chore: update state [skip ci]" && git push
