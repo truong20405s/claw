@@ -1,21 +1,19 @@
-name: Scheduled MiMo Auto Login
+name: Test Login Only
 
 on:
-  schedule:
-    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  run-scheduled:
+  test-login:
     container:
       image: mcr.microsoft.com/playwright/python:v1.49.1-noble
       options: --shm-size=2g
 
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -34,31 +32,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Restore state
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/state.json
-          key: mimo-scheduled-state
-          restore-keys: |
-            mimo-scheduled-state
+      - name: Run login test (all accounts, 1min interval)
+        run: python run_scheduled.py --headless --login-only
 
-      - name: Show current state
-        run: |
-          if [ -f state.json ]; then
-            echo "=== Current State ==="
-            cat state.json
-          else
-            echo "=== No state file (first run) ==="
-          fi
-
-      - name: Run scheduled task
-        run: python run_scheduled.py --headless
-
-      - name: Show updated state
+      - name: Show final state
         if: always()
         run: |
           if [ -f state.json ]; then
-            echo "=== Updated State ==="
+            echo "=== Final State ==="
             cat state.json
           fi
 
@@ -69,4 +50,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
           git add state.json
-          git diff --cached --quiet || git commit -m "chore: update state [skip ci]" && git push
+          git diff --cached --quiet || git commit -m "chore: update test state [skip ci]" && git push

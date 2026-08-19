@@ -62,6 +62,10 @@ def parse_args() -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Logging level.",
     )
+    parser.add_argument(
+        "--login-only", action="store_true",
+        help="Only perform login (skip prompt sending). For testing.",
+    )
     return parser.parse_args()
 
 

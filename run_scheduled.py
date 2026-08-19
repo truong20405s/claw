@@ -148,61 +148,118 @@ async def async_main() -> None:
     accounts = config["accounts"]
     interval_hours = config.get("interval_hours", INTERVAL_HOURS)
 
+    # Override interval for login-only testing
+    if getattr(args, "login_only", False):
+        interval_hours = 1.0 / 60  # 1 minute for testing
+        log.info("Login-only mode: interval set to 1 minute.")
+
     log.info("=== Scheduled Run Started ===")
-    log.info("Accounts: %d, Interval: %.2fh", len(accounts), interval_hours)
+    log.info("Accounts: %d, Interval: %.2fh, Login-only: %s", len(accounts), interval_hours, getattr(args, "login_only", False))
 
     # Load state
     state = load_state()
 
-    # Wait if needed
-    wait_until_ready(state)
-
-    # Get next account
-    account_index, account_data = get_next_account(accounts, state)
-
-    # Run the account
-    log.info("Running account: %s", account_data["account"])
+    # Wait if needed (skip in login-only mode)
+    if not getattr(args, "login_only", False):
+        wait_until_ready(state)
+    else:
+        log.info("Login-only mode: skipping wait.")
 
     # Setup proxy
     proxy_list = parse_proxy_pool(getattr(args, "proxy_server", None))
     proxy_pool = ProxyPool(proxy_list) if proxy_list else None
 
-    completed = await run_account_session(
-        args,
-        account_data["account"],
-        account_data["password"],
-        proxy_pool=proxy_pool,
-    )
+    login_only = getattr(args, "login_only", False)
 
-    # Update state
-    now = datetime.now(timezone.utc)
-    state["last_run_time"] = now.isoformat()
-    state["account_index"] = (account_index + 1) % len(accounts)
-    state["total_runs"] = state.get("total_runs", 0) + 1
-    state["history"] = state.get("history", [])
+    if login_only:
+        # Login-only mode: run ALL accounts with 1-minute delay
+        log.info("=== Login-only mode: testing all %d accounts ===", len(accounts))
+        results = []
+        for i, account_data in enumerate(accounts):
+            log.info("\n--- Account %d/%d: %s ---", i + 1, len(accounts), account_data["account"])
+            try:
+                completed = await run_account_session(
+                    args,
+                    account_data["account"],
+                    account_data["password"],
+                    proxy_pool=proxy_pool,
+                )
+                results.append((account_data["account"], completed))
+                if completed:
+                    log.info("✅ Login SUCCESS: %s", account_data["account"])
+                else:
+                    log.warning("❌ Login FAILED: %s", account_data["account"])
+            except Exception as e:
+                log.error("💥 Login ERROR: %s — %s", account_data["account"], e)
+                results.append((account_data["account"], False))
 
-    # Keep last 50 history entries
-    state["history"].append({
-        "account": account_data["account"],
-        "time": now.isoformat(),
-        "completed": completed,
-    })
-    state["history"] = state["history"][-50:]
+            # Wait 1 minute between accounts (skip after last)
+            if i < len(accounts) - 1:
+                log.info("Waiting 60 seconds before next account...")
+                await asyncio.sleep(60)
 
-    save_state(state)
+        # Summary
+        log.info("\n=== LOGIN TEST SUMMARY ===")
+        for account, ok in results:
+            status = "✅ OK" if ok else "❌ FAIL"
+            log.info("  %s: %s", status, account)
+        success_count = sum(1 for _, ok in results if ok)
+        log.info("Result: %d/%d accounts successful.", success_count, len(results))
 
-    if completed:
-        log.info("=== Account completed successfully: %s ===", account_data["account"])
+        # Update state
+        now = datetime.now(timezone.utc)
+        state["last_run_time"] = now.isoformat()
+        state["account_index"] = 0
+        state["total_runs"] = state.get("total_runs", 0) + 1
+        state["history"] = state.get("history", [])
+        for account, ok in results:
+            state["history"].append({
+                "account": account,
+                "time": now.isoformat(),
+                "completed": ok,
+            })
+        state["history"] = state["history"][-50:]
+        save_state(state)
     else:
-        log.warning("=== Account failed: %s ===", account_data["account"])
-        # Still move to next account on failure
-        log.info("Moving to next account for next run.")
+        # Normal mode: run ONE account in rotation
+        account_index, account_data = get_next_account(accounts, state)
+        log.info("Running account: %s", account_data["account"])
 
-    log.info(
-        "Next run will pick account index %d (account #%d)",
-        state["account_index"],
-        state["account_index"] + 1,
-    )
+        completed = await run_account_session(
+            args,
+            account_data["account"],
+            account_data["password"],
+            proxy_pool=proxy_pool,
+        )
+
+        # Update state
+        now = datetime.now(timezone.utc)
+        state["last_run_time"] = now.isoformat()
+        state["account_index"] = (account_index + 1) % len(accounts)
+        state["total_runs"] = state.get("total_runs", 0) + 1
+        state["history"] = state.get("history", [])
+
+        # Keep last 50 history entries
+        state["history"].append({
+            "account": account_data["account"],
+            "time": now.isoformat(),
+            "completed": completed,
+        })
+        state["history"] = state["history"][-50:]
+
+        save_state(state)
+
+        if completed:
+            log.info("=== Account completed successfully: %s ===", account_data["account"])
+        else:
+            log.warning("=== Account failed: %s ===", account_data["account"])
+            log.info("Moving to next account for next run.")
+
+        log.info(
+            "Next run will pick account index %d (account #%d)",
+            state["account_index"],
+            state["account_index"] + 1,
+        )
 
 
 def main() -> None:

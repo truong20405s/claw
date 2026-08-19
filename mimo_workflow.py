@@ -613,16 +613,21 @@ async def run_workflow(
 ) -> bool:
     account = args.account.strip()
     password = args.password
+    login_only = getattr(args, "login_only", False)
 
     # Pre-load prompt BEFORE browser actions to avoid blocking the event loop later
-    log.info("Pre-loading prompt from source: %s", args.prompt_source)
-    try:
-        loop = asyncio.get_event_loop()
-        prompt_text = await loop.run_in_executor(None, load_prompt, args.prompt_source)
-        log.info("Prompt pre-loaded: %d character(s).", len(prompt_text))
-    except Exception as exc:
-        log.error("Failed to load prompt: %s", error_summary(exc))
-        return False
+    prompt_text = ""
+    if not login_only:
+        log.info("Pre-loading prompt from source: %s", args.prompt_source)
+        try:
+            loop = asyncio.get_event_loop()
+            prompt_text = await loop.run_in_executor(None, load_prompt, args.prompt_source)
+            log.info("Prompt pre-loaded: %d character(s).", len(prompt_text))
+        except Exception as exc:
+            log.error("Failed to load prompt: %s", error_summary(exc))
+            return False
+    else:
+        log.info("Login-only mode: skipping prompt loading.")
 
     log.info("Opening: %s", args.url)
     max_nav_retries = 2
@@ -671,6 +676,16 @@ async def run_workflow(
         return False
 
     otp = await wait_for_otp_from_tempmail(inbox, args.otp_timeout)
+    if not otp:
+        log.warning("No OTP received.")
+        return False
+
+    if login_only:
+        log.info("Login-only mode: OTP received (%s), skipping prompt. Login successful!", otp)
+        if args.screenshot:
+            await save_screenshot(tab, args.screenshot)
+        return True
+
     completed = bool(otp) and await complete_creation_flow(tab, otp, prompt_text, args)
     if args.screenshot:
         await save_screenshot(tab, args.screenshot)
