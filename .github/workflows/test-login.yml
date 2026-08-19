@@ -55,6 +55,7 @@ jobs:
         if: always()
         run: |
           cd $GITHUB_WORKSPACE
+          git config --global --add safe.directory $GITHUB_WORKSPACE
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git -C $GITHUB_WORKSPACE remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
