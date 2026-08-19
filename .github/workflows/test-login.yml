@@ -47,28 +47,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run login test (single account)
+      - name: Run single account login test
         working-directory: ${{ github.workspace }}
-        run: python -c "
-import asyncio, nodriver as uc
-from account_rotation import run_account_session
-from app_config import parse_args
-import argparse, sys, logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', handlers=[logging.StreamHandler(sys.stdout)])
-args = parse_args()
-args.headless = True
-args.login_only = True
-args.url = 'https://aistudio.xiaomimimo.com/'
-args.timeout = 60
-args.prompt_source = ''
-args.screenshot = ''
-args.otp_timeout = 120
-args.proxy_server = None
-async def test():
-    completed = await run_account_session(args, 'mi12@tempmail.id.vn', 'nvt2005S!')
-    print(f'\nResult: {"✅ SUCCESS" if completed else "❌ FAILED"}')
-uc.loop().run_until_complete(test())
-"
+        run: python test_single_login.py
 
       - name: Show final state
         if: always()
