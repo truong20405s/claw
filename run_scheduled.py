@@ -34,7 +34,7 @@ from account_rotation import ProxyPool
 log = logging.getLogger("claw.scheduled")
 
 STATE_FILE = Path(__file__).resolve().with_name("state.json")
-INTERVAL_HOURS = 4.0
+INTERVAL_HOURS = 3.0
 INTERVAL_SECONDS = INTERVAL_HOURS * 3600
 
 
