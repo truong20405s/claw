@@ -2,11 +2,7 @@
 
 This project runs as a background worker. It does not expose an HTTP port.
 
-## Railway deployment
-
-Railpack reads `railpack.json`, installs Chromium, and starts the nodriver worker
-with `python app.py --headless`. Linux servers without a display automatically
-enable headless mode as well.
+## Setup
 
 Deploy `accounts.json` together with the source. Its structure is:
 

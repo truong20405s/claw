@@ -259,7 +259,7 @@ async def wait_until_loaded(
                 raise RuntimeError(
                     f"Browser failed to connect (URL: {current_url}). "
                     f"Network error details: {error_details or 'Connection failed / IP blocked'}. "
-                    "If deploying to cloud (Railway/VPS), Xiaomi may be blocking datacenter IPs. "
+                    "If deploying to cloud (VPS), Xiaomi may be blocking datacenter IPs. "
                     "Please set PROXY_SERVER in environment variables."
                 )
             if expected_url_contains and expected_url_contains not in current_url:
