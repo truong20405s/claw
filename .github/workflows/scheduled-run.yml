@@ -81,4 +81,4 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git -C $GITHUB_WORKSPACE remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
           git -C $GITHUB_WORKSPACE add state.json || true
-          git -C $GITHUB_WORKSPACE diff --cached --quiet || git -C $GITHUB_WORKSPACE commit -m "chore: update state [skip ci]" && git -C $GITHUB_WORKSPACE push || echo "Nothing to commit"
+          git -C $GITHUB_WORKSPACE diff --cached --quiet || (git -C $GITHUB_WORKSPACE commit -m "chore: update state [skip ci]" && git -C $GITHUB_WORKSPACE pull --rebase && git -C $GITHUB_WORKSPACE push) || echo "Nothing to commit"
