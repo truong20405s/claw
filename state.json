@@ -1,7 +1,7 @@
 {
-  "last_run_time": "2026-08-24T16:23:26.397479+00:00",
-  "account_index": 1,
-  "total_runs": 12,
+  "last_run_time": "2026-08-24T19:26:47.358142+00:00",
+  "account_index": 2,
+  "total_runs": 13,
   "history": [
     {
       "account": "mi12@tempmail.id.vn",
@@ -61,6 +61,11 @@
     {
       "account": "mi12@tempmail.id.vn",
       "time": "2026-08-24T16:23:26.397479+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi8@tempmail.id.vn",
+      "time": "2026-08-24T19:26:47.358142+00:00",
       "completed": true
     }
   ]
