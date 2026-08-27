@@ -1,8 +1,6 @@
 name: Scheduled MiMo Auto Login
 
 on:
-  schedule:
-    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -71,6 +69,20 @@ jobs:
             echo "=== Updated State ==="
             cat state.json
           fi
+
+      - name: Update last_run_timestamp
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          python3 -c "
+          import json, time
+          with open('state.json', 'r') as f:
+              state = json.load(f)
+          state['last_run_timestamp'] = int(time.time() * 1000)
+          with open('state.json', 'w') as f:
+              json.dump(state, f, indent=2)
+          print(f'Updated last_run_timestamp: {state[\"last_run_timestamp\"]}')
+          "
 
       - name: Commit state
         if: always()
