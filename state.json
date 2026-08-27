@@ -1,24 +1,89 @@
 {
   "interval_hours": 3,
-  "last_run_timestamp": 1756085434772,
-  "last_run_time": "2026-08-25T01:30:34.772178+00:00",
-  "account_index": 4,
-  "total_runs": 15,
+  "last_run_timestamp": 1787832532694,
+  "last_run_time": "2026-08-27T12:08:52.453758+00:00",
+  "account_index": 5,
+  "total_runs": 16,
   "history": [
-    {"account": "mi12@tempmail.id.vn", "time": "2026-08-19T17:55:14.515052+00:00", "completed": true},
-    {"account": "mi8@tempmail.id.vn", "time": "2026-08-23T09:25:43.463631+00:00", "completed": false},
-    {"account": "mi9@tempmail.id.vn", "time": "2026-08-23T12:53:32.172050+00:00", "completed": true},
-    {"account": "mi2@tempmail.id.vn", "time": "2026-08-23T15:56:44.868308+00:00", "completed": true},
-    {"account": "mi10@tempmail.id.vn", "time": "2026-08-23T19:00:02.697277+00:00", "completed": true},
-    {"account": "mi4@tempmail.id.vn", "time": "2026-08-23T22:03:31.629945+00:00", "completed": true},
-    {"account": "mi5@tempmail.id.vn", "time": "2026-08-24T01:06:41.567453+00:00", "completed": true},
-    {"account": "mi6@tempmail.id.vn", "time": "2026-08-24T04:10:04.792814+00:00", "completed": true},
-    {"account": "mi7@tempmail.id.vn", "time": "2026-08-24T07:13:27.388481+00:00", "completed": true},
-    {"account": "mi11@tempmail.id.vn", "time": "2026-08-24T10:16:50.504853+00:00", "completed": true},
-    {"account": "mi13@tempmail.id.vn", "time": "2026-08-24T13:20:02.858028+00:00", "completed": true},
-    {"account": "mi12@tempmail.id.vn", "time": "2026-08-24T16:23:26.397479+00:00", "completed": true},
-    {"account": "mi8@tempmail.id.vn", "time": "2026-08-24T19:26:47.358142+00:00", "completed": true},
-    {"account": "mi9@tempmail.id.vn", "time": "2026-08-24T22:29:58.043600+00:00", "completed": true},
-    {"account": "mi2@tempmail.id.vn", "time": "2026-08-25T01:30:34.772178+00:00", "completed": false}
+    {
+      "account": "mi12@tempmail.id.vn",
+      "time": "2026-08-19T17:55:14.515052+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi8@tempmail.id.vn",
+      "time": "2026-08-23T09:25:43.463631+00:00",
+      "completed": false
+    },
+    {
+      "account": "mi9@tempmail.id.vn",
+      "time": "2026-08-23T12:53:32.172050+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi2@tempmail.id.vn",
+      "time": "2026-08-23T15:56:44.868308+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi10@tempmail.id.vn",
+      "time": "2026-08-23T19:00:02.697277+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi4@tempmail.id.vn",
+      "time": "2026-08-23T22:03:31.629945+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi5@tempmail.id.vn",
+      "time": "2026-08-24T01:06:41.567453+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi6@tempmail.id.vn",
+      "time": "2026-08-24T04:10:04.792814+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi7@tempmail.id.vn",
+      "time": "2026-08-24T07:13:27.388481+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi11@tempmail.id.vn",
+      "time": "2026-08-24T10:16:50.504853+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi13@tempmail.id.vn",
+      "time": "2026-08-24T13:20:02.858028+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi12@tempmail.id.vn",
+      "time": "2026-08-24T16:23:26.397479+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi8@tempmail.id.vn",
+      "time": "2026-08-24T19:26:47.358142+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi9@tempmail.id.vn",
+      "time": "2026-08-24T22:29:58.043600+00:00",
+      "completed": true
+    },
+    {
+      "account": "mi2@tempmail.id.vn",
+      "time": "2026-08-25T01:30:34.772178+00:00",
+      "completed": false
+    },
+    {
+      "account": "mi10@tempmail.id.vn",
+      "time": "2026-08-27T12:08:52.453758+00:00",
+      "completed": true
+    }
   ]
 }
