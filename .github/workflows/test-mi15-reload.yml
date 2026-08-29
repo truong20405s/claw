@@ -1,0 +1,68 @@
+name: Test Mi15 Reload
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-mi15-reload:
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.49.1-noble
+      options: --shm-size=2g
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Find Chrome binary
+        run: |
+          CHROME_PATH=$(find /ms-playwright -name 'chrome' -type f 2>/dev/null | head -1)
+          if [ -z "$CHROME_PATH" ]; then
+            CHROME_PATH=$(which chromium || which chromium-browser || which google-chrome || which chrome || echo '')
+          fi
+          if [ -z "$CHROME_PATH" ]; then
+            echo 'ERROR: Chrome not found!'
+            exit 1
+          fi
+          echo "CHROME_BIN=$CHROME_PATH" >> $GITHUB_ENV
+          echo "Found Chrome: $CHROME_PATH"
+
+      - name: Install dependencies
+        run: |
+          cd $GITHUB_WORKSPACE
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run mi15 reload test
+        run: |
+          cd $GITHUB_WORKSPACE
+          python test_mi15_reload.py
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: test_screenshots/
+          retention-days: 7
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test_mi15_reload.log
+          retention-days: 7
