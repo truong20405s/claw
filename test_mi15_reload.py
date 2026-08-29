@@ -1,5 +1,5 @@
 """
-Test: mi15 account — full workflow with reload-on-timeout strategy.
+Test: mi16 account — full workflow with reload-on-timeout strategy.
 
 If the prompt textarea is not found within 60s, reload the page
 (up to 2 times, 30s settle each) and try again.
@@ -9,7 +9,6 @@ Usage:
 """
 from __future__ import annotations
 
-import argparse
 import asyncio
 import logging
 import sys
@@ -51,27 +50,17 @@ from mimo_workflow import (
     submit_otp,
     ensure_creation_confirmation,
     set_prompt_textarea_value,
-    text_chunks,
-    normalize_textarea_text,
     INPUT_FOCUS_SETTLE_SECONDS,
     BUTTON_SETTLE_SECONDS,
-)
-from nodriver_utils import navigate
-
-# Retain Account button — appears when Xiaomi flags login from datacenter IP
-RETAIN_ACCOUNT_BUTTON: Locator = (TEXT, "Retain Account")
-from tempmail_flow import (
-    prepare_tempmail_inbox,
-    wait_for_otp_from_tempmail,
 )
 
 # ── Config ───────────────────────────────────────────────────
 TEST_ACCOUNT   = "mi16@tempmail.id.vn"
 TEST_PASSWORD  = "***"
 TEST_URL       = "https://aistudio.xiaomimimo.com/"
-FIRST_TIMEOUT  = 60      # seconds to wait for textarea on first try
-SETTLE_SECONDS = 30      # seconds to wait after each reload
-MAX_RELOADS    = 2        # max page reloads before giving up
+FIRST_TIMEOUT  = 60
+SETTLE_SECONDS = 30
+MAX_RELOADS    = 2
 SCREENSHOT_DIR = ROOT / "test_screenshots"
 SCREENSHOT_DIR.mkdir(exist_ok=True)
 
@@ -89,9 +78,10 @@ log = logging.getLogger("test")
 
 # ── Chrome ───────────────────────────────────────────────────
 import os
-os.environ["CHROME_BIN"] = os.environ.get(
-    "CHROME_BIN", "/home/work/chromium-local/chrome"
-)
+os.environ["CHROME_BIN"] = os.environ.get("CHROME_BIN", "/home/work/chromium-local/chrome")
+
+# Retain Account button — Xiaomi shows this when login from datacenter IP
+RETAIN_ACCOUNT_BUTTON: Locator = (TEXT, "Retain Account")
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -108,8 +98,15 @@ async def snap(tag: str, tab: uc.Tab) -> None:
         log.warning("📸 failed: %s", e)
 
 
+async def log_url(tab: uc.Tab, label: str) -> None:
+    try:
+        url = await tab.evaluate("window.location.href", return_by_value=True)
+        log.info("🌐 %s: %s", label, url)
+    except Exception:
+        pass
+
+
 async def reload_and_find_textarea(tab: uc.Tab) -> bool:
-    """Reload the page and try to find the prompt textarea."""
     for i in range(1, MAX_RELOADS + 1):
         log.info("🔄 Reload attempt %d/%d...", i, MAX_RELOADS)
         try:
@@ -179,10 +176,19 @@ async def main() -> None:
         await ensure_terms_accepted(tab, timeout=15)
         await fill_login_credentials(tab, TEST_ACCOUNT, TEST_PASSWORD, timeout=15)
         await submit_sign_in(tab, timeout=15)
+
+        # Wait for page to settle after sign-in
+        await asyncio.sleep(5)
+        try:
+            await wait_until_loaded(tab, timeout=15)
+        except Exception:
+            pass
+
+        await log_url(tab, "After sign-in")
         await snap("signed_in", tab)
 
         # 5b. Handle "Retain Account" page (Xiaomi flags datacenter IPs)
-        log.info("5️⃣b Checking for Retain Account page...")
+        log.info("5b. Checking for Retain Account page...")
         retain_clicked = await click_when_present(tab, RETAIN_ACCOUNT_BUTTON, "Retain Account", timeout=5)
         if retain_clicked:
             log.info("   ✅ Clicked Retain Account — waiting for redirect...")
@@ -193,20 +199,30 @@ async def main() -> None:
                 pass
             await snap("after_retain", tab)
         else:
-            log.info("   No Retain Account page (normal login from residential IP).")
+            log.info("   No Retain Account page.")
+
+        await log_url(tab, "After retain check")
 
         # 6. Wait for verification page
         log.info("6️⃣ Wait for Send Email button")
         try:
             await find_element(tab, SEND_EMAIL_BUTTON, timeout=30)
+            log.info("   ✅ Send Email button found!")
         except Exception:
             log.error("❌ Send Email button not found — login failed?")
             await snap("no_send_email", tab)
+            # Log page text for debugging
+            try:
+                page_text = await tab.evaluate("document.body.innerText.substring(0, 2000)", return_by_value=True)
+                log.info("Page text: %s", page_text[:500])
+            except Exception:
+                pass
             return
         await snap("verification_ready", tab)
 
         # 7. TempMail
         log.info("7️⃣ Prepare TempMail inbox")
+        from tempmail_flow import prepare_tempmail_inbox, wait_for_otp_from_tempmail
         inbox = await prepare_tempmail_inbox(browser, TEST_ACCOUNT, original_tab=tab, timeout=15)
         if not inbox:
             log.error("❌ TempMail failed")
