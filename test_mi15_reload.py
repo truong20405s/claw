@@ -23,6 +23,8 @@ sys.path.insert(0, str(ROOT))
 
 from nodriver_utils import (
     CSS,
+    TEXT,
+    Locator,
     build_browser,
     click_element,
     click_when_present,
@@ -54,6 +56,10 @@ from mimo_workflow import (
     INPUT_FOCUS_SETTLE_SECONDS,
     BUTTON_SETTLE_SECONDS,
 )
+from nodriver_utils import navigate
+
+# Retain Account button — appears when Xiaomi flags login from datacenter IP
+RETAIN_ACCOUNT_BUTTON: Locator = (TEXT, "Retain Account")
 from tempmail_flow import (
     prepare_tempmail_inbox,
     wait_for_otp_from_tempmail,
@@ -174,6 +180,20 @@ async def main() -> None:
         await fill_login_credentials(tab, TEST_ACCOUNT, TEST_PASSWORD, timeout=15)
         await submit_sign_in(tab, timeout=15)
         await snap("signed_in", tab)
+
+        # 5b. Handle "Retain Account" page (Xiaomi flags datacenter IPs)
+        log.info("5️⃣b Checking for Retain Account page...")
+        retain_clicked = await click_when_present(tab, RETAIN_ACCOUNT_BUTTON, "Retain Account", timeout=5)
+        if retain_clicked:
+            log.info("   ✅ Clicked Retain Account — waiting for redirect...")
+            await asyncio.sleep(5)
+            try:
+                await wait_until_loaded(tab, timeout=15)
+            except Exception:
+                pass
+            await snap("after_retain", tab)
+        else:
+            log.info("   No Retain Account page (normal login from residential IP).")
 
         # 6. Wait for verification page
         log.info("6️⃣ Wait for Send Email button")
