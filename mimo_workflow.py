@@ -377,6 +377,48 @@ def load_prompt(prompt_source: str | Path) -> str:
     )
 
 
+async def _wait_for_workspace_ready(tab: uc.Tab, timeout: int = 30) -> None:
+    """Wait for the workspace page to finish loading after clicking Continue Creating.
+
+    Handles:
+    - Page URL stabilising to the workspace hash
+    - Loading spinners / splash screens disappearing
+    - Announcement or cookie popups that re-appear
+    """
+    deadline = time.monotonic() + timeout
+    log.info("Waiting up to %ds for workspace page to stabilise...", timeout)
+
+    # 1. Wait for URL to contain the workspace hash
+    while time.monotonic() < deadline:
+        try:
+            url = await tab.evaluate("window.location.href", return_by_value=True)
+            if url and "#" in url:
+                log.info("Workspace URL detected: %s", url)
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(0.5)
+
+    # 2. Dismiss any popups that may have appeared
+    await click_when_present(tab, ANNOUNCEMENT_CLOSE_BUTTON, "Announcement (post-create)", timeout=2)
+    await click_when_present(tab, COOKIE_ACCEPT_BUTTON, "Cookie Accept (post-create)", timeout=1)
+
+    # 3. Wait for the body to report complete readyState
+    while time.monotonic() < deadline:
+        try:
+            ready = await tab.evaluate("document.readyState", return_by_value=True)
+            if ready == "complete":
+                log.info("Page readyState is 'complete'.")
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(0.5)
+
+    # 4. Small grace period for React to render
+    await asyncio.sleep(3)
+    log.info("Workspace stabilisation wait done.")
+
+
 async def send_prompt_after_creation(
     tab: uc.Tab,
     prompt_text: str,
@@ -400,6 +442,9 @@ async def send_prompt_after_creation(
             )
             if not confirmed:
                 log.debug("No confirmation dialog, continuing to prompt...")
+
+        # ── NEW: wait for workspace to actually be ready ──
+        await _wait_for_workspace_ready(tab, timeout=60)
 
         log.info("Waiting up to %ds for the workspace...", wait_seconds + timeout)
         deadline = time.monotonic() + wait_seconds + timeout
@@ -590,6 +635,9 @@ async def complete_creation_flow(
         confirmed = await ensure_creation_confirmation(tab)
         if not confirmed:
             log.info("Confirmation step skipped (workspace may already exist); proceeding to prompt.")
+        else:
+            # After clicking Continue Creating, wait for the workspace to load
+            await _wait_for_workspace_ready(tab, timeout=60)
     else:
         log.info("Existing workspace detected: skipping creation confirmation.")
 
