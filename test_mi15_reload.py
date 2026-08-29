@@ -60,7 +60,7 @@ from tempmail_flow import (
 )
 
 # ── Config ───────────────────────────────────────────────────
-TEST_ACCOUNT   = "mi15@tempmail.id.vn"
+TEST_ACCOUNT   = "mi16@tempmail.id.vn"
 TEST_PASSWORD  = "***"
 TEST_URL       = "https://aistudio.xiaomimimo.com/"
 FIRST_TIMEOUT  = 60      # seconds to wait for textarea on first try
