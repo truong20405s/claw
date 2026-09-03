@@ -51,6 +51,14 @@ jobs:
           cd $GITHUB_WORKSPACE
           python test_all_logins.py
 
+      - name: Upload failure screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: test_screenshots/
+          retention-days: 7
+
       - name: Commit state
         if: always()
         run: |
